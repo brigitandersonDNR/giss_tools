@@ -4,27 +4,27 @@
 import arcpy
 arcpy.env.overwriteOutput = True
 
-#Get Variables
-selection_fc = arcpy.GetParameter(0)
-population_fc = arcpy.GetParameterAsText(1)
-field_name = arcpy.GetParameterAsText(2)
+def parcel_numbers_values(table, field):
+    with arcpy.da.SearchCursor(table, [field]) as cursor:
+        return sorted ({row[0] for row in cursor if row[0] is not None})
+
+group_fc = arcpy.GetParameterAsText(0)
+group_field_name = arcpy.GetParameterAsText(1)
+selection_fc = arcpy.GetParameterAsText(1)
+selection_field_pop = arcpy.GetParameterAsText(2)
+id_list = id_values(group_fc, group_field_name)
 
 
+for item in id_list:
+    item_string = str(item)
+    where_clause = '"' + group_field_name + '" = ' + "'" + item_string + "'"
+    item_select = arcpy.SelectLayerByAttribute_management(group_fc, "NEW_SELECTION", where_clause)
 
-#Update DNR Region Code
-#selection layer MUST be added to map to populate correctly
-selection_values = []
+    arcpy.SelectLayerByLocation_management(selection_fc, "WITHIN", item_select, selection_type="NEW_SELECTION")
+    arcpy.management.CalculateField(selection_fc, selection_field_pop, item_string, "PYTHON3")
 
-
-for selection in selection_values:
-    rgn_cd = region_codes[region]
-    rgn_nm = region
-    where_clause = '"' + field_name + '" = ' + "'" + rgn_nm + "'"
-    region_select = arcpy.SelectLayerByAttribute_management(regions_fc, "NEW_SELECTION", where_clause)
-    arcpy.SelectLayerByLocation_management(ffpa_county, "WITHIN", region_select, selection_type="NEW_SELECTION")
-    arcpy.management.CalculateField(ffpa_county, "RGN_CD", rgn_cd, "PYTHON3")
-    arcpy.SelectLayerByAttribute_management(ffpa_county, "CLEAR_SELECTION")
-    arcpy.SelectLayerByAttribute_management(regions_fc, "CLEAR_SELECTION")
+    arcpy.SelectLayerByAttribute_management(group_fc, "CLEAR_SELECTION")
+    arcpy.SelectLayerByAttribute_management(selection_fc, "CLEAR_SELECTION")
 
 
 
